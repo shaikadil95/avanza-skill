@@ -1,8 +1,8 @@
 ---
 name: avanza
 description: Fetch and analyse Avanza investment portfolio — overview, position gains, transactions, monthly investment analysis, insights reports, and dividend tracking. Use when the user asks about their stocks, portfolio performance, holdings, gains, dividends, or transaction history.
-allowed-tools: Bash(uv run *)
-argument-hint: [portfolio|positions|transactions|monthly|insights|dividends] [args]
+allowed-tools: "Bash(uv run *)"
+argument-hint: "[portfolio|positions|transactions|monthly|insights|dividends] [args]"
 context: fork
 ---
 
