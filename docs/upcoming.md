@@ -1,5 +1,7 @@
 # Upcoming Features
 
+This skill is and will remain **read-only and analysis-only**. No order placement, account modification, or any write operations will ever be added.
+
 Features planned for future iterations, roughly in priority order.
 
 ---
@@ -67,19 +69,10 @@ What percentage of dividends received were reinvested (appeared as a BUY within 
 
 ---
 
-## Iteration 7 — Alerts & watchlist
-
-### Price alert management
-Set, list, and delete price alerts directly from Claude.
-
-```
-/avanza alert set VOLV-B 250
-/avanza alert list
-/avanza alert delete <id>
-```
+## Iteration 7 — Watchlist analysis
 
 ### Watchlist viewer
-Show all instruments on your Avanza watchlist with current price, day change, and 52-week range.
+Show all instruments on your Avanza watchlist with current price, day change, and 52-week range — read-only.
 
 ```
 /avanza watchlist

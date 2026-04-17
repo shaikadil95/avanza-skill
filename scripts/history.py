@@ -1,6 +1,12 @@
 # /// script
 # dependencies = ["avanza-api"]
 # ///
+"""
+Trade history viewer: read-only analysis of past BUY/SELL/DIVIDEND/DEPOSIT events.
+
+Usage: uv run history.py [from-date] [to-date]
+Default: current month.
+"""
 
 import os
 import sys

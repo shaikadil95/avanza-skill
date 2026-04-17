@@ -1,6 +1,6 @@
 # avanza-skill
 
-A [Claude Code](https://claude.ai/code) skill that connects to your [Avanza](https://www.avanza.se) investment account and lets you analyse your portfolio directly from the Claude CLI.
+A **read-only** [Claude Code](https://claude.ai/code) skill that connects to your [Avanza](https://www.avanza.se) investment account and lets you analyse your portfolio directly from the Claude CLI. It never places orders, modifies your account, or writes any data to Avanza.
 
 > **Disclaimer:** This project is not affiliated with or endorsed by Avanza Bank AB. It is built on top of [`avanza-api`](https://github.com/qluxzz/avanza), a community library that reverse-engineers Avanza's **private, undocumented API**. Avanza can change or remove any endpoint at any time without notice, which may break this skill. The developer is **not responsible** for data inaccuracies, service interruptions, or any decisions made based on this tool's output. Use at your own risk. See [docs/disclaimer.md](docs/disclaimer.md) for full details.
 
@@ -12,7 +12,7 @@ A [Claude Code](https://claude.ai/code) skill that connects to your [Avanza](htt
 |---|---|
 | `/avanza` | Account balances, total value, profit, return % |
 | `/avanza positions` | Every holding with invested amount, current value, and gain/loss |
-| `/avanza transactions [from] [to]` | BUY / SELL / DIVIDEND / DEPOSIT transactions in a date range |
+| `/avanza history [from] [to]` | Past BUY / SELL / DIVIDEND events in a date range (read-only) |
 | `/avanza monthly [YYYY-MM]` | Cash deployed in a month → what those shares are worth today |
 | `/avanza insights [period]` | Development report with best/worst performers and dividend breakdown |
 | `/avanza dividends [YYYY]` | All dividend payments for a year, grouped by stock and month |
@@ -68,8 +68,8 @@ For full setup details see [docs/setup.md](docs/setup.md).
 ```
 /avanza                              # portfolio overview
 /avanza positions                    # all holdings with gain/loss
-/avanza transactions                 # transactions this month
-/avanza transactions 2026-03-01 2026-03-31
+/avanza history                      # trade history this month
+/avanza history 2026-03-01 2026-03-31
 /avanza monthly                      # last month's deployed cash vs today
 /avanza monthly 2026-02
 /avanza insights                     # year-to-date report

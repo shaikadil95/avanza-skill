@@ -1,5 +1,7 @@
 # Command Reference
 
+This skill is **read-only**. It only fetches and analyses data from Avanza — it never places orders, sets alerts, or modifies your account in any way.
+
 All commands are invoked via `/avanza [subcommand] [args]` inside Claude Code.  
 Scripts can also be run directly: `uv run ~/.claude/skills/avanza/scripts/<name>.py`
 
@@ -48,18 +50,20 @@ Also prints a **Cash Positions** section showing uninvested cash per account.
 
 ---
 
-## `transactions` — Transaction history
+## `history` — Trade history
 
 ```
-/avanza transactions
-/avanza transactions 2026-03-01 2026-03-31
+/avanza history
+/avanza history 2026-03-01 2026-03-31
 ```
+
+Read-only view of past events recorded in your account. No data is written.
 
 **Arguments:**
 - `from-date` — start date in `YYYY-MM-DD` format (default: first day of current month)
 - `to-date` — end date in `YYYY-MM-DD` format (default: today)
 
-Covers all transaction types: BUY, SELL, DIVIDEND, DEPOSIT, WITHDRAW.
+Covers all event types: BUY, SELL, DIVIDEND, DEPOSIT, WITHDRAW.
 
 | Field | Description |
 |---|---|
