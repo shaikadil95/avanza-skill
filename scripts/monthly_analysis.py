@@ -29,6 +29,16 @@ def fmt(value, decimals=2):
     return f"{value:,.{decimals}f}"
 
 
+def gv(d, *keys, default=None):
+    for key in keys:
+        if not isinstance(d, dict):
+            return default
+        d = d.get(key, default)
+        if d is default:
+            return default
+    return d
+
+
 def month_bounds(ym: str) -> tuple[date, date]:
     """Return (first_day, last_day) for a YYYY-MM string."""
     try:
@@ -37,7 +47,6 @@ def month_bounds(ym: str) -> tuple[date, date]:
         print(f"ERROR: Invalid month '{ym}'. Use YYYY-MM format.", file=sys.stderr)
         sys.exit(1)
     first = date(year, month, 1)
-    # last day: first day of next month minus 1
     if month == 12:
         last = date(year + 1, 1, 1) - timedelta(days=1)
     else:
@@ -58,13 +67,14 @@ def main():
     month_arg = sys.argv[1] if len(sys.argv) > 1 else prev_month_str()
     date_from, date_to = month_bounds(month_arg)
 
-    from avanza import Avanza, TransactionsDetailsType
+    from avanza import Avanza
+    from avanza.constants import TransactionsDetailsType
 
     avanza = Avanza({
         "username": os.environ["AVANZA_USERNAME"],
         "password": os.environ["AVANZA_PASSWORD"],
         "totpSecret": os.environ["AVANZA_TOTP_SECRET"],
-    })
+    }, retry_with_next_otp=True)
 
     # --- 1. Fetch BUY transactions for the month ---
     result = avanza.get_transactions_details(
@@ -73,46 +83,82 @@ def main():
         transactions_to=date_to,
         max_elements=1000,
     )
-    transactions = result.transactions if hasattr(result, "transactions") else result
+
+    if isinstance(result, dict):
+        transactions = result.get("transactions", [])
+    elif hasattr(result, "transactions"):
+        transactions = result.transactions
+    else:
+        transactions = result or []
 
     if not transactions:
         print(f"No BUY transactions found in {month_arg}.")
         return
 
     # --- 2. Group by ISIN: sum shares bought and total cost ---
-    # Key: isin → {name, shares, cost, orderbook_id}
     by_isin: dict[str, dict] = defaultdict(lambda: {"name": "", "shares": 0.0, "cost": 0.0, "ob_id": None})
     for txn in transactions:
-        isin = txn.isin or ""
-        if not isin:
-            continue
-        entry = by_isin[isin]
-        entry["name"] = txn.instrumentName or entry["name"] or isin
-        if txn.volume and txn.volume.value:
-            entry["shares"] += txn.volume.value
-        if txn.amount and txn.amount.value:
-            # amount is negative for buys in some APIs; take abs
-            entry["cost"] += abs(txn.amount.value)
-        if txn.orderbook and not entry["ob_id"]:
-            entry["ob_id"] = txn.orderbook.id if hasattr(txn.orderbook, "id") else None
+        if isinstance(txn, dict):
+            isin = txn.get("isin") or ""
+            if not isin:
+                continue
+            entry = by_isin[isin]
+            entry["name"] = txn.get("instrumentName") or entry["name"] or isin
+            vol = gv(txn, "volume", "value")
+            amt = gv(txn, "amount", "value")
+            if vol:
+                entry["shares"] += abs(vol)
+            if amt:
+                entry["cost"] += abs(amt)
+            if not entry["ob_id"]:
+                entry["ob_id"] = gv(txn, "orderbook", "id")
+        else:
+            isin = txn.isin or ""
+            if not isin:
+                continue
+            entry = by_isin[isin]
+            entry["name"] = txn.instrumentName or entry["name"] or isin
+            if txn.volume and txn.volume.value:
+                entry["shares"] += abs(txn.volume.value)
+            if txn.amount and txn.amount.value:
+                entry["cost"] += abs(txn.amount.value)
+            if txn.orderbook and not entry["ob_id"]:
+                entry["ob_id"] = txn.orderbook.id if hasattr(txn.orderbook, "id") else None
 
     # --- 3. Get current positions to find price per share ---
     positions_data = avanza.get_accounts_positions()
     price_by_isin: dict[str, float] = {}
-    for pos in positions_data.withOrderbook:
-        isin = pos.instrument.isin if hasattr(pos.instrument, "isin") else None
-        if isin and pos.volume and pos.volume.value and pos.value and pos.value.value:
-            price_by_isin[isin] = pos.value.value / pos.volume.value
 
-    # For ISINs not in current positions (stock sold), try market data via orderbookId
+    if isinstance(positions_data, dict):
+        with_ob = positions_data.get("withOrderbook", [])
+    else:
+        with_ob = getattr(positions_data, "withOrderbook", [])
+
+    for pos in with_ob:
+        if isinstance(pos, dict):
+            isin = gv(pos, "instrument", "isin")
+            vol = gv(pos, "volume", "value")
+            val = gv(pos, "value", "value")
+        else:
+            isin = pos.instrument.isin if hasattr(pos.instrument, "isin") else None
+            vol = pos.volume.value if pos.volume else None
+            val = pos.value.value if pos.value else None
+        if isin and vol and val:
+            price_by_isin[isin] = val / vol
+
+    # For ISINs not in current positions, try market data via orderbookId
     for isin, entry in by_isin.items():
         if isin not in price_by_isin and entry["ob_id"]:
             try:
                 mkt = avanza.get_market_data(entry["ob_id"])
-                if mkt and mkt.quote and mkt.quote.last:
-                    price_by_isin[isin] = mkt.quote.last
+                if isinstance(mkt, dict):
+                    last = gv(mkt, "quote", "latest", "value") or gv(mkt, "quote", "last")
+                else:
+                    last = (mkt.quote.last if mkt and mkt.quote else None)
+                if last:
+                    price_by_isin[isin] = last
             except Exception:
-                pass  # leave price unknown
+                pass
 
     # --- 4. Print table ---
     print(f"## Monthly Investment Analysis — {month_arg}\n")
