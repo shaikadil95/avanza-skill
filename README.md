@@ -63,6 +63,30 @@ For full setup details see [docs/setup.md](docs/setup.md).
 
 ---
 
+## Example output
+
+### `/avanza monthly 2026-03`
+
+```
+Monthly Investment Analysis — 2026-03
+
+Period: 2026-03-01 → 2026-03-31
+
+Stock                      Shares       Deployed      Now Worth   Gain (SEK)     Gain %   Price?
+------------------------  --------  --------------  --------------  ------------  ----------  --------
+AMAZON.COM                       2        3,850.00        4,620.40        770.40       20.0%      live
+APPLE INC                        4        9,200.00        9,660.00        460.00        5.0%      live
+MICROSOFT CORP                   6       21,600.00       23,976.00      2,376.00       11.0%      live
+NVIDIA CORPORATION               8       12,400.00       14,136.00      1,736.00       14.0%      live
+SOME ETF                        10        8,000.00        7,600.00       -400.00       -5.0%      live
+------------------------  --------  --------------  --------------  ------------  ----------  --------
+TOTAL                                    55,050.00       59,992.40      4,942.40        9.0%
+```
+
+In March 2026, **55,050 SEK** was deployed across 5 positions — now worth **59,992 SEK**, a gain of **+4,942 SEK (+9.0%)** in roughly four weeks. Microsoft and NVIDIA were the top contributors; the ETF position is the only laggard at -5.0%.
+
+---
+
 ## Usage examples
 
 ```
