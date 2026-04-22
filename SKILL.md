@@ -1,8 +1,8 @@
 ---
 name: avanza
-description: Fetch and analyse Avanza investment portfolio — overview, position gains, transactions, monthly investment analysis, insights reports, and dividend tracking. Use when the user asks about their stocks, portfolio performance, holdings, gains, dividends, or transaction history.
+description: Fetch and analyse Avanza investment portfolio — overview, position gains, transactions, monthly investment analysis, insights reports, dividend tracking, cost basis drill-down, allocation breakdown, and benchmark comparison. Use when the user asks about their stocks, portfolio performance, holdings, gains, dividends, transaction history, sector allocation, concentration risk, or how their portfolio compares to an index.
 allowed-tools: "Bash(uv run *)"
-argument-hint: "[portfolio|positions|history|monthly|insights|dividends] [args]"
+argument-hint: "[portfolio|positions|history|monthly|insights|dividends|costbasis|allocation|compare] [args]"
 context: fork
 ---
 
@@ -20,6 +20,9 @@ When invoked via `/avanza [subcommand] [args]`, run the corresponding script and
 | `monthly [YYYY-MM]` | YYYY-MM | Cash deployed that month → what those shares are worth today |
 | `insights [period]` | today\|week\|ytd\|3y | Portfolio development report with best/worst performers |
 | `dividends [YYYY]` | YYYY | All dividend payments for a year, grouped by stock |
+| `costbasis <name>` | partial name or ISIN | Per-lot purchase history + cumulative avg cost basis for one stock |
+| `allocation` | — | Asset type breakdown, sector allocation (stocks), concentration risk, currency exposure |
+| `compare [period]` | today\|week\|ytd\|3y | Portfolio return vs OMXS30 and OMXSPI benchmarks |
 
 If no subcommand is given, run `portfolio` by default.
 
@@ -34,6 +37,9 @@ uv run ~/.claude/skills/avanza/scripts/history.py [from-date] [to-date]
 uv run ~/.claude/skills/avanza/scripts/monthly_analysis.py [YYYY-MM]
 uv run ~/.claude/skills/avanza/scripts/insights.py [today|week|ytd|3y]
 uv run ~/.claude/skills/avanza/scripts/dividends.py [YYYY]
+uv run ~/.claude/skills/avanza/scripts/costbasis.py <name_or_isin>
+uv run ~/.claude/skills/avanza/scripts/allocation.py
+uv run ~/.claude/skills/avanza/scripts/compare.py [today|week|ytd|3y]
 ```
 
 Date format: `YYYY-MM-DD`. Month format: `YYYY-MM`. Example: `/avanza history 2026-03-01 2026-03-31`

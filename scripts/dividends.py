@@ -28,6 +28,16 @@ def fmt(value, decimals=2):
     return f"{value:,.{decimals}f}"
 
 
+def gv(d, *keys, default=None):
+    for key in keys:
+        if not isinstance(d, dict):
+            return default
+        d = d.get(key, default)
+        if d is default:
+            return default
+    return d
+
+
 def main():
     check_credentials()
 
@@ -41,13 +51,14 @@ def main():
     date_from = date(year, 1, 1)
     date_to = date(year, 12, 31)
 
-    from avanza import Avanza, TransactionsDetailsType
+    from avanza import Avanza
+    from avanza.constants import TransactionsDetailsType
 
     avanza = Avanza({
         "username": os.environ["AVANZA_USERNAME"],
         "password": os.environ["AVANZA_PASSWORD"],
         "totpSecret": os.environ["AVANZA_TOTP_SECRET"],
-    })
+    }, retry_with_next_otp=True)
 
     result = avanza.get_transactions_details(
         transaction_details_types=[TransactionsDetailsType.DIVIDEND],
@@ -55,23 +66,37 @@ def main():
         transactions_to=date_to,
         max_elements=1000,
     )
-    transactions = result.transactions if hasattr(result, "transactions") else result
+
+    if isinstance(result, dict):
+        transactions = result.get("transactions", [])
+    elif hasattr(result, "transactions"):
+        transactions = result.transactions
+    else:
+        transactions = result or []
 
     if not transactions:
         print(f"No dividend payments found in {year}.")
         return
 
     # Group by instrument name (use isin as fallback key)
-    # Key: (isin or name) → {name, payments: [(date, amount)]}
     by_stock: dict[str, dict] = defaultdict(lambda: {"name": "", "payments": []})
 
     for txn in transactions:
-        key = txn.isin or txn.instrumentName or txn.description or "unknown"
-        entry = by_stock[key]
-        if not entry["name"]:
-            entry["name"] = txn.instrumentName or txn.description or key
-        pay_date = txn.tradeDate or txn.settlementDate or (txn.date[:10] if txn.date else "—")
-        amount = txn.amount.value if txn.amount and txn.amount.value else 0.0
+        if isinstance(txn, dict):
+            key = txn.get("isin") or txn.get("instrumentName") or txn.get("description") or "unknown"
+            entry = by_stock[key]
+            if not entry["name"]:
+                entry["name"] = txn.get("instrumentName") or txn.get("description") or key
+            raw_date = txn.get("tradeDate") or txn.get("settlementDate") or txn.get("date") or "—"
+            pay_date = str(raw_date)[:10]
+            amount = gv(txn, "amount", "value") or 0.0
+        else:
+            key = txn.isin or txn.instrumentName or txn.description or "unknown"
+            entry = by_stock[key]
+            if not entry["name"]:
+                entry["name"] = txn.instrumentName or txn.description or key
+            pay_date = txn.tradeDate or txn.settlementDate or (txn.date[:10] if txn.date else "—")
+            amount = txn.amount.value if txn.amount and txn.amount.value else 0.0
         entry["payments"].append((pay_date, amount))
 
     print(f"## Dividend Income — {year}\n")

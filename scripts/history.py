@@ -35,6 +35,16 @@ def fmt(value, decimals=2):
     return f"{value:,.{decimals}f}"
 
 
+def gv(d, *keys, default=None):
+    for key in keys:
+        if not isinstance(d, dict):
+            return default
+        d = d.get(key, default)
+        if d is default:
+            return default
+    return d
+
+
 def main():
     check_credentials()
 
@@ -58,7 +68,7 @@ def main():
         "username": os.environ["AVANZA_USERNAME"],
         "password": os.environ["AVANZA_PASSWORD"],
         "totpSecret": os.environ["AVANZA_TOTP_SECRET"],
-    })
+    }, retry_with_next_otp=True)
 
     result = avanza.get_transactions_details(
         transactions_from=date_from,
@@ -66,7 +76,12 @@ def main():
         max_elements=1000,
     )
 
-    transactions = result.transactions if hasattr(result, "transactions") else result
+    if isinstance(result, dict):
+        transactions = result.get("transactions", [])
+    elif hasattr(result, "transactions"):
+        transactions = result.transactions
+    else:
+        transactions = result or []
 
     print(f"## Transactions  {date_from} → {date_to}\n")
 
@@ -76,6 +91,8 @@ def main():
 
     # Sort by trade date descending
     def sort_key(t):
+        if isinstance(t, dict):
+            return t.get("tradeDate") or t.get("date") or ""
         return t.tradeDate or t.date or ""
 
     transactions = sorted(transactions, key=sort_key, reverse=True)
@@ -90,14 +107,32 @@ def main():
     print(header)
     print(sep)
 
+    total_amount = 0.0
+    total_commission = 0.0
+
     for txn in transactions:
-        trade_date = txn.tradeDate or (txn.date[:10] if txn.date else "—")
-        name = (txn.instrumentName or txn.description or "—")[:col_w[1]]
-        txn_type = (txn.type or "—")[:col_w[2]]
-        volume = txn.volume.value if txn.volume else None
-        price = txn.priceInTransactionCurrency.value if txn.priceInTransactionCurrency else None
-        amount = txn.amount.value if txn.amount else None
-        commission = txn.commission.value if txn.commission else None
+        if isinstance(txn, dict):
+            raw_date = txn.get("tradeDate") or txn.get("date") or "—"
+            trade_date = str(raw_date)[:10]
+            name = (txn.get("instrumentName") or txn.get("description") or "—")[:col_w[1]]
+            txn_type = (txn.get("type") or "—")[:col_w[2]]
+            volume = gv(txn, "volume", "value")
+            price = gv(txn, "priceInTransactionCurrency", "value")
+            amount = gv(txn, "amount", "value")
+            commission = gv(txn, "commission", "value")
+        else:
+            trade_date = txn.tradeDate or (txn.date[:10] if txn.date else "—")
+            name = (txn.instrumentName or txn.description or "—")[:col_w[1]]
+            txn_type = (txn.type or "—")[:col_w[2]]
+            volume = txn.volume.value if txn.volume else None
+            price = txn.priceInTransactionCurrency.value if txn.priceInTransactionCurrency else None
+            amount = txn.amount.value if txn.amount else None
+            commission = txn.commission.value if txn.commission else None
+
+        if amount:
+            total_amount += amount
+        if commission:
+            total_commission += commission
 
         vol_str = fmt(volume, 0) if volume and volume == int(volume) else fmt(volume) if volume else "—"
 
@@ -108,8 +143,6 @@ def main():
         )
 
     print(sep)
-    total_amount = sum(t.amount.value for t in transactions if t.amount and t.amount.value)
-    total_commission = sum(t.commission.value for t in transactions if t.commission and t.commission.value)
     print(f"{'TOTAL':<{col_w[0]}}  {'':>{col_w[1]+col_w[2]+col_w[3]+col_w[4]+6}}  {fmt(total_amount):>{col_w[5]}}  {fmt(total_commission):>{col_w[6]}}")
     print(f"\n{len(transactions)} transaction(s) in period.")
 

@@ -20,6 +20,17 @@ def fmt(value, decimals=2):
     return f"{value:,.{decimals}f}"
 
 
+def gv(d, *keys, default=None):
+    """Safely get nested dict value."""
+    for key in keys:
+        if not isinstance(d, dict):
+            return default
+        d = d.get(key, default)
+        if d is default:
+            return default
+    return d
+
+
 def main():
     check_credentials()
 
@@ -29,9 +40,17 @@ def main():
         "username": os.environ["AVANZA_USERNAME"],
         "password": os.environ["AVANZA_PASSWORD"],
         "totpSecret": os.environ["AVANZA_TOTP_SECRET"],
-    })
+    }, retry_with_next_otp=True)
 
-    positions = avanza.get_accounts_positions()
+    positions_data = avanza.get_accounts_positions()
+
+    # Support both dict and object-style responses
+    if isinstance(positions_data, dict):
+        with_ob = positions_data.get("withOrderbook", [])
+        cash_positions = positions_data.get("cashPositions", [])
+    else:
+        with_ob = getattr(positions_data, "withOrderbook", [])
+        cash_positions = getattr(positions_data, "cashPositions", [])
 
     print("## Holdings & Gains\n")
 
@@ -49,21 +68,26 @@ def main():
     total_value = 0.0
     total_gain = 0.0
 
-    for pos in positions.withOrderbook:
-        name = pos.instrument.name[:col_w[0]]
-        shares = pos.volume.value if pos.volume else None
-        invested = pos.acquiredValue.value if pos.acquiredValue else None
-        value = pos.value.value if pos.value else None
+    for pos in with_ob:
+        if isinstance(pos, dict):
+            name = gv(pos, "instrument", "name", default="—")[:col_w[0]]
+            shares = gv(pos, "volume", "value")
+            invested = gv(pos, "acquiredValue", "value")
+            value = gv(pos, "value", "value")
+            day_pct = gv(pos, "lastTradingDayPerformance", "relative", "value")
+        else:
+            name = pos.instrument.name[:col_w[0]]
+            shares = pos.volume.value if pos.volume else None
+            invested = pos.acquiredValue.value if pos.acquiredValue else None
+            value = pos.value.value if pos.value else None
+            day_pct = (pos.lastTradingDayPerformance.relative.value
+                       if pos.lastTradingDayPerformance and pos.lastTradingDayPerformance.relative else None)
 
         gain_sek = None
         gain_pct = None
         if value is not None and invested is not None:
             gain_sek = value - invested
             gain_pct = (gain_sek / invested * 100) if invested != 0 else 0.0
-
-        day_pct = None
-        if pos.lastTradingDayPerformance and pos.lastTradingDayPerformance.relative:
-            day_pct = pos.lastTradingDayPerformance.relative.value
 
         if invested:
             total_invested += invested
@@ -92,12 +116,17 @@ def main():
     )
 
     # Cash positions
-    if positions.cashPositions:
+    if cash_positions:
         print("\n## Cash Positions\n")
-        for cash in positions.cashPositions:
-            acc_name = cash.account.name if hasattr(cash.account, "name") else cash.account.id
-            balance = cash.totalBalance.value if cash.totalBalance else None
-            unit = cash.totalBalance.unit if cash.totalBalance else "SEK"
+        for cash in cash_positions:
+            if isinstance(cash, dict):
+                acc_name = gv(cash, "account", "name") or gv(cash, "account", "id") or "—"
+                balance = gv(cash, "totalBalance", "value")
+                unit = gv(cash, "totalBalance", "unit") or "SEK"
+            else:
+                acc_name = cash.account.name if hasattr(cash.account, "name") else cash.account.id
+                balance = cash.totalBalance.value if cash.totalBalance else None
+                unit = cash.totalBalance.unit if cash.totalBalance else "SEK"
             print(f"  {acc_name}: {fmt(balance)} {unit}")
 
 

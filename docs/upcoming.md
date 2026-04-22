@@ -6,52 +6,64 @@ Features planned for future iterations, roughly in priority order.
 
 ---
 
-## Iteration 3 — Per-stock history & cost basis
+## ~~Iteration 3 — Per-stock history & cost basis~~ ✓ Implemented
 
 ### Return since first purchase
-Show each position's return calculated from the actual first purchase date, not just the running average buy price.
+Show each position's return calculated from the actual first purchase date.
 
-- Fetch BUY transactions per stock to find the earliest purchase date
-- Use `get_chart_data()` to pull price history from that date to today
-- Display: first buy date, price then, price now, total return %
+**Implemented** as `costbasis.py` — shows first buy date, price then, current price, and total return % since first purchase alongside the cumulative avg cost basis table.
 
 ### Average cost basis drill-down
 For a specific stock, show every purchase event (date, shares, price, total cost) building up to the current average cost basis.
 
+**Implemented** as `costbasis.py`:
+
 ```
-/avanza costbasis VOLV-B
+/avanza costbasis APPLE
+/avanza costbasis US0378331005
 ```
 
 ---
 
-## Iteration 4 — Portfolio composition & allocation
+## ~~Iteration 4 — Portfolio composition & allocation~~ ✓ Implemented
 
 ### Sector / asset allocation
-Break down the portfolio by sector, geography, or instrument type (stocks, funds, ETFs) using data from `get_stock_info()`.
+Break down the portfolio by sector, geography, or instrument type.
+
+**Implemented** as `allocation.py`:
 
 ```
 /avanza allocation
 ```
 
-Output: pie-style text breakdown showing % of portfolio per sector and asset class.
+Output: asset type breakdown (STOCK/FUND/ETF/CASH), sector breakdown per stock via `get_stock_info()`, and currency exposure.
 
 ### Concentration risk
-Highlight positions that exceed a threshold (e.g. > 10% of portfolio) and flag currency exposure for non-SEK holdings.
+Highlight positions that exceed 10% of portfolio and flag non-SEK currency exposure.
+
+**Implemented** in `allocation.py` — positions ≥ 10% are listed with a `[HIGH]` marker for those ≥ 20%.
 
 ---
 
-## Iteration 5 — Performance benchmarking
+## ~~Iteration 5 — Performance benchmarking~~ ✓ Implemented
 
 ### Compare portfolio to index
-Fetch chart data for a benchmark (e.g. OMXS30, S&P 500) and overlay it with portfolio performance for the same period.
+Compare portfolio return to OMXS30 and OMXSPI for a chosen period.
+
+**Implemented** as `compare.py`:
 
 ```
 /avanza compare ytd
-/avanza compare 2025
+/avanza compare week
+/avanza compare 3y
 ```
 
+Uses `get_insights_report()` for portfolio return and `get_index_info()` `historicalClosingPrices` for index returns. Shows alpha (portfolio − benchmark) for each index.
+
 ### Sharpe / volatility metrics
-Compute annualised return, volatility, and a rough Sharpe ratio using daily close prices over a chosen period.
+Compute annualised return, volatility, and a rough Sharpe ratio using daily close prices.
+
+Not yet implemented — planned for a future iteration using `get_chart_data()`.
 
 ---
 
@@ -100,3 +112,4 @@ Show foreign dividends with the withheld tax rate per country, useful for tax re
 - **ISK tax calculation** — estimate the annual ISK flat-rate tax (schablonskatt) based on current portfolio value
 - **Order book viewer** — show bid/ask depth for a specific instrument
 - **Multi-currency normalisation** — convert all positions to a single currency for a clean total when holding USD/EUR instruments
+- **Sharpe / volatility metrics** — annualised return, volatility, Sharpe ratio via `get_chart_data()` daily closes
