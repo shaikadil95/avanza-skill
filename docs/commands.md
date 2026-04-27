@@ -150,3 +150,55 @@ Output sections:
 
 Footer shows total payments count and grand total income.  
 A **By Month** breakdown at the end shows when dividends were received throughout the year.
+
+---
+
+## `swing` — Multi-timeframe swing trade analysis
+
+```
+/avanza swing APPLE
+/avanza swing AAPL
+/avanza swing US0378331005
+```
+
+**Argument:** stock name, ticker symbol, or ISIN (required). Searches Avanza for the stock — works for any instrument listed on Avanza, including US stocks.
+
+Implements the Multi-Timeframe Technical Convergence Analysis model:
+
+| Timeframe | Role | Weight |
+|---|---|---|
+| Weekly (1W) | Defines macro direction — non-negotiable | 2x |
+| Daily (1D) | Confirms setup and momentum | 1.5x |
+| 4H (aggregated from 1H) | Entry timing only | 1x |
+
+**Indicators computed per timeframe:**
+
+| Indicator | Timeframes | Purpose |
+|---|---|---|
+| MACD (12/26/9) | Weekly, Daily, 4H | Trend bias |
+| Stochastic (14/3) | Daily, 4H | Timing: pullbacks and exhaustion |
+| Bollinger Bands (20/2) | Weekly, Daily, 4H | Structure: breakout vs rejection, squeeze |
+| Volume vs 20-bar MA | All | Mandatory gate — no volume, no trade |
+
+**Output sections:**
+
+1. **Timeframe Alignment** — trend, MACD, Stochastic, Bollinger, Volume across all three timeframes
+2. **Scores** — weighted points per timeframe (max 21.25 total)
+3. **Analysis** — global bias, strategy label, confidence (0–3), validity
+4. **Indicator Values** — raw numbers for MACD, BB bands, Stoch %K/%D, close, volume ratio
+5. **Trade Plan** — indicative entry zone, stop loss (recent swing low / BB lower), take-profit (1:2 R:R)
+
+**Strategy labels:**
+
+| Label | Condition |
+|---|---|
+| `trend following` | Weekly + Daily both aligned, volume confirmed |
+| `pullback entry` | Weekly clear, Daily in pullback, 4H reversing |
+| `reversal` | Weekly weakening/bearish, Daily bearish, volume spike |
+| `no trade` | Volume too weak or signals mixed |
+
+**Confidence (0–3):**
+- **3** — All three timeframes agree + volume confirmed
+- **2** — Two timeframes agree + volume confirmed
+- **1** — Weekly direction clear, partial confirmation
+- **0** — No signal (no trade)
