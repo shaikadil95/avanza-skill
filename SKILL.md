@@ -23,6 +23,7 @@ When invoked via `/avanza [subcommand] [args]`, run the corresponding script and
 | `costbasis <name>` | partial name or ISIN | Per-lot purchase history + cumulative avg cost basis for one stock |
 | `allocation` | — | Asset type breakdown, sector allocation (stocks), concentration risk, currency exposure |
 | `compare [period]` | today\|week\|ytd\|3y | Portfolio return vs OMXS30 and OMXSPI benchmarks |
+| `swing <name>` | name, ticker, or ISIN | Multi-timeframe swing trade analysis: MACD + Bollinger + Stochastic + Volume across weekly / daily / 4H |
 
 If no subcommand is given, run `portfolio` by default.
 
@@ -40,6 +41,7 @@ uv run ~/.claude/skills/avanza/scripts/dividends.py [YYYY]
 uv run ~/.claude/skills/avanza/scripts/costbasis.py <name_or_isin>
 uv run ~/.claude/skills/avanza/scripts/allocation.py
 uv run ~/.claude/skills/avanza/scripts/compare.py [today|week|ytd|3y]
+uv run ~/.claude/skills/avanza/scripts/swing_trade.py <name_or_ticker_or_isin>
 ```
 
 Date format: `YYYY-MM-DD`. Month format: `YYYY-MM`. Example: `/avanza history 2026-03-01 2026-03-31`

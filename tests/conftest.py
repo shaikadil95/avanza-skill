@@ -175,3 +175,56 @@ MOCK_STOCK_INFO = {
     "sectors": [{"sectorName": "Technology", "sectorId": "1"}],
     "listing": {"countryCode": "US", "currency": "USD"},
 }
+
+# ---------------------------------------------------------------------------
+# Swing trade mock data
+# ---------------------------------------------------------------------------
+
+def _make_ohlc(n, base=100.0, step=0.5, vol_base=2_000_000, vol_step=50_000):
+    """Generate n deterministic OHLCV candles with a linear uptrend."""
+    candles = []
+    for i in range(n):
+        price = base + i * step
+        candles.append({
+            "timestamp": 1_700_000_000_000 + i * 86_400_000,
+            "open":  round(price - 0.2, 2),
+            "close": round(price,       2),
+            "high":  round(price + 0.5, 2),
+            "low":   round(price - 0.5, 2),
+            "totalVolumeTraded": vol_base + i * vol_step,
+        })
+    return candles
+
+
+MOCK_SEARCH_HITS = [
+    {
+        "title": "APPLE INC",
+        "highlightedTitle": "APPLE INC",
+        "description": "Apple Inc.",
+        "highlightedDescription": "Apple Inc.",
+        "path": "/aktier/usa/apple-inc/5447",
+        "urlSlugName": "apple-inc",
+        "tradeable": True,
+        "sellable": True,
+        "buyable": True,
+        "price": {
+            "last": "195.00",
+            "currency": "USD",
+            "todayChangePercent": "1.2",
+            "todayChangeValue": "2.30",
+            "todayChangeDirection": 1,
+            "threeMonthsAgoChangePercent": "8.5",
+            "threeMonthsAgoChangeDirection": 1,
+            "spread": "0.01",
+        },
+        "stockSectors": [],
+        "fundTags": [],
+        "marketPlaceName": "NYSE",
+        "subType": None,
+        "highlightedSubType": None,
+    }
+]
+
+MOCK_CHART_WEEKLY  = {"ohlc": _make_ohlc(60, base=80.0,  step=0.4), "from": "2025-04-01", "to": "2026-04-27", "previousClosingPrice": 103.5}
+MOCK_CHART_DAILY   = {"ohlc": _make_ohlc(70, base=95.0,  step=0.2), "from": "2026-01-15", "to": "2026-04-27", "previousClosingPrice": 108.9}
+MOCK_CHART_HOURLY  = {"ohlc": _make_ohlc(130, base=105.0, step=0.05), "from": "2026-03-27", "to": "2026-04-27", "previousClosingPrice": 111.4}
